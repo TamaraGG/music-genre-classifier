@@ -1,0 +1,64 @@
+# music-genre-classifier/docker-compose.yml
+
+version: '3.8'
+
+services:
+  db:
+    image: postgres:14-alpine
+    container_name: music-genre-db
+    environment:
+      POSTGRES_DB: musicdb
+      POSTGRES_USER: user
+      POSTGRES_PASSWORD: password
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - app-network
+
+  ai-service:
+    build:
+      context: ./ai-service
+    container_name: music-genre-ai-service
+    ports:
+      - "5001:5001"
+    networks:
+      - app-network
+    depends_on:
+      - db
+
+  backend:
+    build:
+      context: ./backend
+    container_name: music-genre-backend
+    environment:
+      SPRING_DATASOURCE_URL: jdbc:postgresql://db:5432/musicdb
+      SPRING_DATASOURCE_USERNAME: user
+      SPRING_DATASOURCE_PASSWORD: password
+      AI_SERVICE_URL: http://ai-service:5001/predict
+    ports:
+      - "8080:8080"
+    networks:
+      - app-network
+    depends_on:
+      - db
+      - ai-service
+
+  frontend:
+    build:
+      context: ./frontend
+    container_name: music-genre-frontend
+    ports:
+      - "80:80"
+    networks:
+      - app-network
+    depends_on:
+      - backend
+
+networks:
+  app-network:
+    driver: bridge
+
+volumes:
+  postgres_data:
