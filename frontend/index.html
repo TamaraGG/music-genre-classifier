@@ -1,0 +1,54 @@
+<!DOCTYPE html>
+<html lang="ru">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Классификатор Музыкальных Жанров</title>
+    <link rel="stylesheet" href="style.css">
+</head>
+<body>
+<main class="main-wrapper">
+    <div class="container">
+        <h1>Загрузите аудиофайл для определения жанра</h1>
+
+        <form id="upload-form">
+            <div class="form-controls">
+                <input type="file" id="audio-file-input" name="file" accept="audio/*" required>
+                <label for="audio-file-input" class="file-label">Выберите файл</label>
+                <span id="file-name-display">Файл не выбран</span>
+                <button type="submit">Определить жанр</button>
+            </div>
+        </form>
+
+        <div id="loader" class="loader" style="display: none;"></div>
+
+        <div id="result-section" style="display: none;">
+            <h2>Результат анализа:</h2>
+            <p><strong>Наиболее вероятный жанр:</strong> <span id="top-genre"></span></p>
+            <h3>Вероятности по всем жанрам:</h3>
+            <ul id="probabilities-list"></ul>
+        </div>
+
+        <div id="error-section" style="display: none;">
+            <p id="error-message"></p>
+        </div>
+    </div>
+
+    <div class="container" id="history-section">
+        <h2>История анализов</h2>
+        <table>
+            <thead>
+            <tr>
+                <th>Имя файла</th>
+                <th>Определенный жанр</th>
+                <th>Дата и время</th>
+            </tr>
+            </thead>
+            <tbody id="history-table-body">
+            </tbody>
+        </table>
+    </div>
+</main>
+<script src="script.js"></script>
+</body>
+</html>
