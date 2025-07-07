@@ -16,7 +16,7 @@ document.addEventListener('DOMContentLoaded', () => {
             fileNameDisplay.style.fontStyle = 'normal';
             fileNameDisplay.style.color = '#e0e0e0';
         } else {
-            fileNameDisplay.textContent = 'Файл не выбран';
+            fileNameDisplay.textContent = 'File not selected';
             fileNameDisplay.style.fontStyle = 'italic';
             fileNameDisplay.style.color = '#aaa';
         }
@@ -25,22 +25,22 @@ document.addEventListener('DOMContentLoaded', () => {
     async function fetchAndDisplayHistory() {
         try {
             const response = await fetch('/api/history');
-            if (!response.ok) throw new Error('Не удалось загрузить историю');
+            if (!response.ok) throw new Error('Failed to load history');
             const history = await response.json();
             historyTableBody.innerHTML = '';
             if (history.length === 0) {
-                historyTableBody.innerHTML = '<tr><td colspan="3">История пока пуста.</td></tr>';
+                historyTableBody.innerHTML = '<tr><td colspan="3">No history yet.</td></tr>';
                 return;
             }
             history.forEach(item => {
                 const row = document.createElement('tr');
-                const formattedDate = new Date(item.predictionTimestamp).toLocaleString('ru-RU');
+                const formattedDate = new Date(item.predictionTimestamp).toLocaleString('en-US');
                 row.innerHTML = `<td>${item.fileName}</td><td>${item.predictedGenre}</td><td>${formattedDate}</td>`;
                 historyTableBody.appendChild(row);
             });
         } catch (error) {
-            console.error('Ошибка при загрузке истории:', error);
-            historyTableBody.innerHTML = '<tr><td colspan="3">Ошибка загрузки истории.</td></tr>';
+            console.error('Error loading history:', error);
+            historyTableBody.innerHTML = '<tr><td colspan="3">Error loading history.</td></tr>';
         }
     }
 
@@ -48,7 +48,7 @@ document.addEventListener('DOMContentLoaded', () => {
         event.preventDefault();
         const file = audioFileInput.files[0];
         if (!file) {
-            showError('Пожалуйста, выберите файл.');
+            showError('Please select a file.');
             return;
         }
         loader.style.display = 'block';
@@ -58,13 +58,13 @@ document.addEventListener('DOMContentLoaded', () => {
         formData.append('file', file);
         try {
             const response = await fetch('/api/upload', { method: 'POST', body: formData });
-            if (!response.ok) throw new Error(`Ошибка сервера: ${response.status} ${response.statusText}`);
+            if (!response.ok) throw new Error(`Server error: ${response.status} ${response.statusText}`);
             const data = await response.json();
             displayResult(data);
             fetchAndDisplayHistory();
         } catch (error) {
-            console.error('Ошибка при загрузке файла:', error);
-            showError('Не удалось получить результат. Попробуйте еще раз.');
+            console.error('Error uploading file:', error);
+            showError('Failed to get the result. Please try again.');
         } finally {
             loader.style.display = 'none';
         }
