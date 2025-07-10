@@ -12,6 +12,7 @@ from flask import Flask, request, jsonify
 
 app = Flask(__name__)
 
+# Configuration and Model Paths
 MODELS_DIR = 'models'
 CRNN_EXTRACTOR_PATH = os.path.join(MODELS_DIR, 'crnn_feature_extractor_final.h5')
 XGB_MODEL_PATH = os.path.join(MODELS_DIR, 'hybrid_xgboost_model.joblib')
@@ -19,6 +20,7 @@ SCALER_PATH = os.path.join(MODELS_DIR, 'hybrid_feature_scaler.joblib')
 LABEL_ENCODER_PATH = os.path.join(MODELS_DIR, 'hybrid_label_encoder.joblib')
 GENRES_PATH = os.path.join(MODELS_DIR, 'genres.json')
 
+# Audio & Feature Parameters (must match training configuration)
 SAMPLE_RATE = 22050
 N_MELS = 128
 HOP_LENGTH = 512
@@ -26,12 +28,14 @@ N_FFT = 2048
 CHUNK_DURATION = 2.0
 SAMPLES_PER_CHUNK = int(SAMPLE_RATE * CHUNK_DURATION)
 
+# Global variables for loaded models
 crnn_encoder = None
 xgb_model = None
 scaler = None
 le = None
 genres_list = []
 
+# Custom SpecAugment Layer (required for loading CRNN model)
 class SpecAugment(tf.keras.layers.Layer):
     def __init__(self, freq_mask_param, time_mask_param, **kwargs):
         super(SpecAugment, self).__init__(**kwargs)
@@ -52,10 +56,12 @@ class SpecAugment(tf.keras.layers.Layer):
         return inputs * tf.cast(mask, dtype=inputs.dtype)
 
 def load_models():
+    """Loads all necessary models when the application starts."""
     global crnn_encoder, xgb_model, scaler, le, genres_list
 
     print(" * Loading models...")
     try:
+        # 1. Load LabelEncoder
         le = joblib.load(LABEL_ENCODER_PATH)
         genres_list = le.classes_.tolist()
         print(f" * LabelEncoder loaded. Genres: {genres_list}")
@@ -78,6 +84,7 @@ def load_models():
 
 
     try:
+        # 2. Load StandardScaler
         scaler = joblib.load(SCALER_PATH)
         print(f" * StandardScaler loaded from {SCALER_PATH}")
     except FileNotFoundError:
@@ -85,6 +92,7 @@ def load_models():
         scaler = StandardScaler()
 
     try:
+        # 3. Load CRNN Feature Extractor
         crnn_full_model = tf.keras.models.load_model(
             CRNN_EXTRACTOR_PATH,
             custom_objects={'SpecAugment': SpecAugment}
@@ -102,6 +110,7 @@ def load_models():
         crnn_encoder = None
 
     try:
+        # 4. Load XGBoost model
         xgb_model = joblib.load(XGB_MODEL_PATH)
         print(f" * XGBoost Model loaded from {XGB_MODEL_PATH}")
     except FileNotFoundError:
@@ -115,13 +124,21 @@ def load_models():
         print("!!! NOT ALL MODELS LOADED. SERVICE MAY FUNCTION INCORRECTLY OR THROW ERRORS !!!")
     print(" * Model loading complete.")
 
+load_models()
 
 @app.route("/predict", methods=["POST"])
 def predict():
+    print(f" * [DEBUG AI] Received request. Request method: {request.method}")
+    print(f" * [DEBUG AI] Request headers: {request.headers}")
+    print(f" * [DEBUG AI] Request files keys: {list(request.files.keys())}")
+
     if 'file' not in request.files:
+        print(" * [DEBUG AI] 'file' key not found in request.files.")
         return jsonify({"error": "Audio file not found in request"}), 400
 
     audio_file = request.files['file']
+    print(f" * [DEBUG AI] File received: {audio_file.filename}, Content-Type: {audio_file.content_type}")
+
     if not audio_file.filename.lower().endswith(('.mp3', '.wav', '.flac', '.ogg')):
         return jsonify({"error": "Unsupported file format. Please upload MP3, WAV, FLAC, or OGG."}), 400
 
@@ -143,7 +160,8 @@ def predict():
                 chunk_specs.append(db_spec)
 
         if not chunk_specs:
-            return jsonify({"error": "Could not extract audio chunks from the file. The file might be too short (less than 2 seconds) or corrupted."}), 422
+            return jsonify(
+                {"error": "Could not extract audio chunks from the file. The file might be too short (less than 2 seconds) or corrupted."}), 422
 
         chunks_np = np.array(chunk_specs)[..., np.newaxis]
         embeddings = crnn_encoder.predict(chunks_np, verbose=0, batch_size=64)
@@ -179,5 +197,4 @@ def predict():
 
 
 if __name__ == "__main__":
-    load_models()
-    app.run(host='0.0.0.0', port=5001, debug=True)
+    pass
