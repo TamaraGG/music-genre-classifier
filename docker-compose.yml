@@ -27,6 +27,10 @@ services:
       - app-network
     depends_on:
       - db
+    deploy:
+      resources:
+        limits:
+          memory: 2G
 
   backend:
     build:
